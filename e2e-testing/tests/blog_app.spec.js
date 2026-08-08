@@ -37,7 +37,7 @@ describe('Blog app', () => {
         await page.getByRole('link', { name: 'new blog' }).click()
         await page.getByLabel('title:').fill('E2E testing')
         await page.getByLabel('author:').fill('aapo')
-        await page.getByLabel('url:').fill('localhost')
+        await page.getByLabel('url:').fill('http://localhost')
         await page.getByRole('button', { name: 'create' }).click()
 
         await expect(page.getByText('E2E testing, -aapo')).toBeVisible()
@@ -45,7 +45,7 @@ describe('Blog app', () => {
 
       describe('A logged-in user can like blogs', () => {
         beforeEach(async ({ page }) => {
-          await createBlog(page, 'E2E testing', 'aapo', 'localhost')
+          await createBlog(page, 'E2E testing', 'aapo', 'http://localhost')
         })
 
         test('a blog can be liked', async ({ page }) => {
@@ -79,39 +79,29 @@ describe('Blog app', () => {
 
       describe('When there are multiple blogs with some amount of likes', () => {
         beforeEach(async ({ page }) => {
-          await createBlog(page, 'Debugging', 'aapo', 'localhost')
-          await createBlog(page, 'Vibin', 'aapo', 'localhost')
-          await createBlog(page, 'E2E testing', 'aapo', 'localhost')
-          await createBlog(page, 'Refactoring', 'aapo', 'localhost')
+          await createBlog(page, 'Debugging', 'aapo', 'http://localhost')
+          await createBlog(page, 'Vibin', 'aapo', 'http://localhost')
+          await createBlog(page, 'E2E testing', 'aapo', 'http://localhost')
+          await createBlog(page, 'Refactoring', 'aapo', 'http://localhost')
 
-          const debuggingBlog = page.locator('.blog').filter({ hasText: 'Debugging' })
-          const vibinBlog = page.locator('.blog').filter({ hasText: 'Vibin' })
-          const e2eBlog = page.locator('.blog').filter({ hasText: 'E2E testing' })
-          const refactoringBlog = page.locator('.blog').filter({ hasText: 'Refactoring' })
+          const likeBlog = async (title, times) => {
+            await page.getByRole('link', { name: `${title}, -aapo` }).click()
+            for (let likes = 1; likes <= times; likes += 1) {
+              await page.getByRole('button', { name: 'like' }).click()
+              await expect(page.getByText(`${likes} Likes`)).toBeVisible()
+            }
+            await page.getByRole('link', { name: 'blogs', exact: true }).click()
+          }
 
-          await vibinBlog.getByRole('button', { name: 'show' }).click()
-          await vibinBlog.getByRole('button', { name: 'like' }).click()
-          await expect(vibinBlog).toContainText('likes 1')
-          await vibinBlog.getByRole('button', { name: 'like' }).click()
-          await expect(vibinBlog).toContainText('likes 2')
-          await vibinBlog.getByRole('button', { name: 'like' }).click()
-          await expect(vibinBlog).toContainText('likes 3')
-
-          await e2eBlog.getByRole('button', { name: 'show' }).click()
-          await e2eBlog.getByRole('button', { name: 'like' }).click()
-          await expect(e2eBlog).toContainText('likes 1')
-          await e2eBlog.getByRole('button', { name: 'like' }).click()
-          await expect(e2eBlog).toContainText('likes 2')
-
-          await debuggingBlog.getByRole('button', { name: 'show' }).click()
-          await debuggingBlog.getByRole('button', { name: 'like' }).click()
-          await expect(debuggingBlog).toContainText('likes 1')
+          await likeBlog('Vibin', 3)
+          await likeBlog('E2E testing', 2)
+          await likeBlog('Debugging', 1)
         })
         test('Blogs are sorted correctly by amount of likes', async ({ page }) => {
-          await expect(page.locator('.blog').nth(0)).toContainText('Vibin')
-          await expect(page.locator('.blog').nth(1)).toContainText('E2E testing')
-          await expect(page.locator('.blog').nth(2)).toContainText('Debugging')
-          await expect(page.locator('.blog').nth(3)).toContainText('Refactoring')
+          await expect(page.locator('li').nth(0)).toContainText('Vibin')
+          await expect(page.locator('li').nth(1)).toContainText('E2E testing')
+          await expect(page.locator('li').nth(2)).toContainText('Debugging')
+          await expect(page.locator('li').nth(3)).toContainText('Refactoring')
         })
       })
     })

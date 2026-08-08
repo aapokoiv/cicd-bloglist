@@ -1,81 +1,66 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Blog from './Blog.jsx'
+import { useAuthStore, useBlogStore } from '../store.js'
+
+const blog = {
+  id: 'blog-1',
+  title: 'This is a testing blog',
+  author: 'Aapo Koivula',
+  url: 'www.testing.react',
+  likes: 1,
+  user: {
+    id: 'user-1',
+    name: 'Aapo Koivula',
+    username: 'aapo',
+  },
+}
+
+const renderBlog = (user = null) => {
+  useBlogStore.setState({ blogs: [blog] })
+  useAuthStore.setState({ user })
+
+  render(
+    <MemoryRouter initialEntries={['/blogs/blog-1']}>
+      <Routes>
+        <Route path="/blogs/:id" element={<Blog />} />
+      </Routes>
+    </MemoryRouter>
+  )
+}
 
 test('all info but no buttons shown for not logged in users', () => {
-  const blog = {
-    id: 'blog-1',
-    title: 'This is a testing blog',
-    author: 'Aapo Koivula',
-    url: 'www.testing.react',
-    likes: 1,
-    user: {
-      id: 'user-1',
-      name: 'Aapo Koivula',
-      username: 'aapo',
-    },
-  }
+  renderBlog()
 
-  render(<Blog blog={blog} />)
-
-  const title = screen.findByText('This is a testing blog')
-  const author = screen.findByText('Aapo Koivula')
-  const url = screen.findByText('www.testing.react')
-  const likes = screen.findByText('likes: 1')
+  expect(screen.getByText('This is a testing blog')).toBeInTheDocument()
+  expect(screen.getByText('By Aapo Koivula')).toBeInTheDocument()
+  expect(screen.getByText('www.testing.react')).toBeInTheDocument()
+  expect(screen.getByText('1 Likes')).toBeInTheDocument()
+  expect(screen.queryByRole('button')).not.toBeInTheDocument()
 })
 
-test('like button but no delete button is shown for other users', async () => {
-  const blog = {
-    id: 'blog-1',
-    title: 'This is a testing blog',
-    author: 'Aapo Koivula',
-    url: 'www.testing.react',
-    likes: 1,
-    user: {
-      id: 'user-1',
-      name: 'Aapo Koivula',
-      username: 'aapo',
-    },
-  }
-
+test('like button but no delete button is shown for other users', () => {
   const loggedInUser = {
     id: 'user-2',
     name: 'onni onnekas',
     username: 'onni',
   }
 
-  render(<Blog blog={blog} user={loggedInUser} />)
+  renderBlog(loggedInUser)
 
-  const user = userEvent.setup()
-  const likeButton = screen.getByText('like')
+  expect(screen.getByRole('button', { name: 'like' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'delete' })).not.toBeInTheDocument()
 })
 
-test('blog creator is shown like and delete button', async () => {
-  const blog = {
-    id: 'blog-1',
-    title: 'This is a testing blog',
-    author: 'Aapo Koivula',
-    url: 'www.testing.react',
-    likes: 1,
-    user: {
-      id: 'user-1',
-      name: 'Aapo Koivula',
-      username: 'aapo',
-    },
-  }
-
+test('blog creator is shown like and delete button', () => {
   const loggedInUser = {
     id: 'user-1',
     name: 'Aapo Koivula',
     username: 'aapo',
   }
 
-  const updateMock = vi.fn()
+  renderBlog(loggedInUser)
 
-  render(<Blog blog={blog} user={loggedInUser} />)
-
-  const user = userEvent.setup()
-  const likeButton = screen.getByText('like')
-
-  const deleteButton = screen.getByText('delete')
+  expect(screen.getByRole('button', { name: 'like' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'delete' })).toBeInTheDocument()
 })

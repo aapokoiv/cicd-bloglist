@@ -1,17 +1,20 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import NewBlogForm from './NewBlogForm.jsx'
+import { useBlogStore } from '../store.js'
 
-test('createBlog prop is called with correct data', async () => {
-  const loggedInUser = {
-    id: 'user-1',
-    name: 'Aapo Koivula',
-    username: 'aapo',
-  }
+test('creates a blog with the entered data', async () => {
+  const addBlog = vi.fn().mockResolvedValue()
+  useBlogStore.setState((state) => ({
+    actions: { ...state.actions, addBlog },
+  }))
 
-  const createMock = vi.fn()
-
-  render(<NewBlogForm createBlog={createMock} />)
+  render(
+    <MemoryRouter>
+      <NewBlogForm />
+    </MemoryRouter>
+  )
 
   const user = userEvent.setup()
 
@@ -22,11 +25,12 @@ test('createBlog prop is called with correct data', async () => {
 
   await user.type(title, 'Adding a blog for test')
   await user.type(author, 'UserEvent user')
-  await user.type(url, 'www.usertestblog.com')
+  await user.type(url, 'https://www.usertestblog.com')
   await user.click(submitButton)
 
-  expect(createMock.mock.calls).toHaveLength(1)
-  expect(createMock.mock.calls[0][0].title).toBe('Adding a blog for test')
-  expect(createMock.mock.calls[0][0].author).toBe('UserEvent user')
-  expect(createMock.mock.calls[0][0].url).toBe('www.usertestblog.com')
+  expect(addBlog).toHaveBeenCalledWith({
+    title: 'Adding a blog for test',
+    author: 'UserEvent user',
+    url: 'https://www.usertestblog.com',
+  })
 })
